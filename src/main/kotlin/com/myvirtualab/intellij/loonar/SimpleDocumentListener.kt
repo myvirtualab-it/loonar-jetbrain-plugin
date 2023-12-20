@@ -1,4 +1,4 @@
-package dev.mayankmkh.intellij.linear
+package com.myvirtualab.intellij.loonar
 
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener

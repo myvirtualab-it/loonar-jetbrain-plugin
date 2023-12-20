@@ -1,4 +1,4 @@
-package dev.mayankmkh.intellij.linear
+package com.myvirtualab.intellij.loonar
 
 import com.apollographql.apollo3.ApolloClient
 import com.apollographql.apollo3.api.Optional
@@ -20,7 +20,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.util.logging.Logger
 
-class LinearRemoteDataSource(private val apolloClient: ApolloClient) {
+class LoonarRemoteDataSource(private val apolloClient: ApolloClient) {
     fun getIssues(
         teamId: String,
         query: String?,
@@ -186,7 +186,7 @@ class LinearRemoteDataSource(private val apolloClient: ApolloClient) {
         }
 
     companion object {
-        private val LOG: Logger = Logger.getLogger(LinearRemoteDataSource::class.simpleName)
+        private val LOG: Logger = Logger.getLogger(LoonarRemoteDataSource::class.simpleName)
         private const val BATCH_SIZE = 50
         private const val MAX_COUNT = 250
     }

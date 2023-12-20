@@ -1,4 +1,4 @@
-# linear-app-plugin
+# loonar-jetbrain-plugin
 
 ![Build](https://github.com/mayankmkh/linear-app-plugin/workflows/Build/badge.svg)
 [![Version](https://img.shields.io/jetbrains/plugin/v/16769.svg)](https://plugins.jetbrains.com/plugin/16769)
@@ -6,7 +6,7 @@
 
 <!-- Plugin description -->
 
-Add Linear.app as Tasks server in your Jetbrains IDE with help of this plugin.  
+Add Loonar as Tasks server in your Jetbrains IDE with help of this plugin.  
 
 ### Configuring Tasks server
 * Navigate to Settings | Tools | Tasks | Servers
@@ -30,6 +30,6 @@ Add Linear.app as Tasks server in your Jetbrains IDE with help of this plugin.
 
 
 ---
-Plugin based on the [IntelliJ Platform Plugin Template][template].
+Plugin based on the [[linear-app-plugin](https://github.com/mayankmkh/linear-app-plugin.git)][template].
 
 [template]: https://github.com/JetBrains/intellij-platform-plugin-template

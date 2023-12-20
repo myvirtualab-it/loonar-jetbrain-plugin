@@ -1,7 +1,7 @@
 <idea-plugin>
-    <id>dev.mayankmkh.intellij.linear</id>
-    <name>Linear Tasks</name>
-    <vendor url="https://www.mayankmkh.dev/">mayankmkh</vendor>
+    <id>com.myvirtualab.intellij.loonar</id>
+    <name>Loonar Tasks</name>
+    <vendor url="https://www.loonar.it/">Loonar</vendor>
 
     <!-- Product and plugin compatibility requirements -->
     <!-- https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
@@ -9,6 +9,6 @@
     <depends>com.intellij.tasks</depends>
 
     <extensions defaultExtensionNs="com.intellij.tasks">
-        <repositoryType implementation="dev.mayankmkh.intellij.linear.LinearRepositoryType"/>
+        <repositoryType implementation="com.myvirtualab.intellij.loonar.LoonarRepositoryType"/>
     </extensions>
 </idea-plugin>

@@ -1,4 +1,4 @@
-package dev.mayankmkh.intellij.linear
+package com.myvirtualab.intellij.loonar
 
 import com.apollographql.apollo3.ApolloClient
 import com.apollographql.apollo3.api.Adapter
@@ -42,15 +42,15 @@ private class AuthorizationInterceptor(private val apiKeyProvider: ApiKeyProvide
     ): HttpResponse {
         val authorizedRequest =
             request.newBuilder()
-                .addHeader("Authorization", apiKeyProvider.getApiKey())
+                .addHeader("Authorization", "Bearer " + apiKeyProvider.getApiKey())
                 .build()
         return chain.proceed(authorizedRequest)
     }
 }
 
 internal fun createApolloClient(
-    serverUrl: String,
-    apiKeyProvider: ApiKeyProvider,
+        serverUrl: String,
+        apiKeyProvider: ApiKeyProvider,
 ) = ApolloClient.Builder()
     .serverUrl(serverUrl)
     .addCustomScalarAdapter(DateTime.type, dateCustomTypeAdapter)
