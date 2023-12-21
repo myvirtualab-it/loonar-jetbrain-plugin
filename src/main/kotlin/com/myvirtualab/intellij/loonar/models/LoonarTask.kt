@@ -1,17 +1,13 @@
 package com.myvirtualab.intellij.loonar.models
 
-import com.apollographql.apollo3.api.Fragment
 import com.intellij.tasks.Comment
 import com.intellij.tasks.Task
 import com.intellij.tasks.TaskRepository
 import com.intellij.tasks.TaskType
-import com.intellij.util.containers.map2Array
 import com.myvirtualab.intellij.loonar.LoonarRepository
-import dev.mayankmkh.intellij.linear.apolloGenerated.fragment.ShortIssueConnection
 import icons.LoonarPluginIcons
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.*
 import javax.swing.Icon
 
 val format = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
@@ -81,7 +77,7 @@ class LoonarTask(private val node: LoonarTaskNode, private val repository: Loona
         return TaskType.FEATURE
     }
 
-    override fun getUpdated(): Date = format.parse(node.data_mod)
+    override fun getUpdated(): Date? = null; // format.parse(node.data_mod.ifEmpty { "" })
 
     override fun getCreated(): Date = format.parse(node.data_inizio)
 

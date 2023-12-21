@@ -1,23 +1,27 @@
 package com.myvirtualab.intellij.loonar
 
+import com.esotericsoftware.minlog.Log
 import com.google.gson.Gson
+import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
-import com.intellij.credentialStore.CredentialAttributes
 import com.intellij.credentialStore.LOG
-import com.intellij.credentialStore.generateServiceName
 import com.intellij.tasks.CustomTaskState
 import com.intellij.tasks.Task
 import com.intellij.tasks.impl.BaseRepository
 import com.intellij.tasks.impl.httpclient.NewBaseRepositoryImpl
-import com.intellij.util.UriUtil
 import com.intellij.util.containers.map2Array
 import com.intellij.util.xmlb.annotations.Tag
+import com.myvirtualab.intellij.loonar.models.LoginParams
 import com.myvirtualab.intellij.loonar.models.LoonarTask
 import com.myvirtualab.intellij.loonar.models.LoonarTaskNode
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
+import okhttp3.FormBody
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.IOException
 
 
 @Suppress("TooManyFunctions")
@@ -26,9 +30,8 @@ class LoonarRepository : NewBaseRepositoryImpl {
     var departmentId: String = ""
     var userId: String = ""
     var tag: String = ""
-
-    private val apiKeyProvider = ApiKeyProvider { password }
-    private val remoteDataSource = LoonarRemoteDataSource(createApolloClient(API_URL, apiKeyProvider))
+    var apiKey: String = ""
+    var accessToken: String = ""
 
     /**
      * Serialization constructor
@@ -38,13 +41,14 @@ class LoonarRepository : NewBaseRepositoryImpl {
 
     constructor(type: LoonarRepositoryType) : super(type) {
         url = "https://be.loonar.it/api/v1/tasks/"
-        username = "Loonar"
     }
 
     constructor(other: LoonarRepository) : super(other) {
         departmentId = other.departmentId
         userId = other.userId
         tag = other.tag
+        apiKey = other.apiKey
+        accessToken = other.accessToken
         // password = other.password
     }
 
@@ -61,10 +65,8 @@ class LoonarRepository : NewBaseRepositoryImpl {
 
     override fun getPresentableName(): String {
         val name = super.getPresentableName()
-        // return name + "/" + workspaceId.ifEmpty { "{workspaceId}" } + "/team/${getTeamId()}"
-        // &access_token=BLa4KjczcYWoZKOwxW5vRdDSPq8SvlGvLHqoCQtkgvW9D2b43ZCm36QZi6SFkDvgJXH5XIFyHN12w7vI
         LOG.info("password: " + password);
-        var finalUrl: String = name.plus("?page=1&limit=100");
+        var finalUrl: String = name.plus("?page=<%page%>&limit=<%limit%>");
         if (tag.isNotEmpty()) finalUrl = finalUrl.plus("&tag=" + tag)
         if (departmentId.isNotEmpty()) finalUrl = finalUrl.plus("&departmentId=" + departmentId)
         if (userId.isNotEmpty()) finalUrl = finalUrl.plus("&userId=" + userId)
@@ -72,27 +74,34 @@ class LoonarRepository : NewBaseRepositoryImpl {
     }
 
     override fun isConfigured(): Boolean =
-        super.isConfigured() && password.isNotBlank() && (tag.isNotBlank() || userId.isNotBlank() || departmentId.isNotBlank())
+            super.isConfigured() &&
+                    username.isNotBlank() &&
+                    password.isNotBlank() &&
+                    (tag.isNotBlank() || userId.isNotBlank() || departmentId.isNotBlank()) &&
+                    accessToken.isNotBlank()
 
     override fun getIssues(
-        query: String?,
-        offset: Int,
-        limit: Int,
-        withClosed: Boolean,
+            query: String?,
+            offset: Int,
+            limit: Int,
+            withClosed: Boolean,
     ): Array<LoonarTask> {
         // val issues = remoteDataSource.getIssues(username, query, offset, limit, withClosed)
         val client = OkHttpClient()
+        // Log.info("$offset $limit");
         val request: Request = Request.Builder()
-                .url(this.getPresentableName())
-                .addHeader("Authorization", "Bearer $password")
+                .url(this.getPresentableName()
+                        .replace("<%page%>", (offset + 1).toString())
+                        .replace("<%limit%>", limit.toString()))
+                .addHeader("Authorization", "Bearer $apiKey")
                 .build()
 
         client.newCall(request).execute().use { response ->
+            // Log.info(response.body?.string());
             val gson = Gson()
             val listType = object : TypeToken<List<LoonarTaskNode>>() {}.type
-            return gson.fromJson<Array<LoonarTaskNode>?>(response.body?.string(), listType).map2Array { LoonarTask(it, this) }
+            return gson.fromJson<List<LoonarTaskNode>?>(response.body?.string(), listType).map2Array { LoonarTask(it, this) }
         }
-        // return issues.map2Array { LoonarTask(it, this) }
     }
 
     override fun createCancellableConnection(): CancellableConnection {
@@ -113,25 +122,63 @@ class LoonarRepository : NewBaseRepositoryImpl {
         }
     }
 
+    override fun getPreferredOpenTaskState(): CustomTaskState {
+        return CustomTaskState(20.toString(), "Wip");
+    }
+
+    override fun getPreferredCloseTaskState(): CustomTaskState {
+        return CustomTaskState(50.toString(), "Chiuso");
+    }
+
     override fun getFeatures(): Int {
         return super.getFeatures() or STATE_UPDATING
     }
 
     override fun getAvailableTaskStates(task: Task): MutableSet<CustomTaskState> {
-        return runBlocking { remoteDataSource.getAvailableTaskStates(task) }
+        val stateSet: MutableSet<CustomTaskState> = mutableSetOf();
+        stateSet.add(CustomTaskState(50.toString(), "Chiuso"))
+        stateSet.add(CustomTaskState(20.toString(), "Wip"))
+        stateSet.add(CustomTaskState(10.toString(), "Aperto"))
+        return stateSet;
     }
 
     override fun setTaskState(
-        task: Task,
-        state: CustomTaskState,
+            task: Task,
+            state: CustomTaskState,
     ) {
-        runBlocking { remoteDataSource.setTaskState(task, state) }
+        Log.info(task.id)
+        Log.info(state.id)
+
+
+        // Loonar login
+        // val loonarToken: String = this.loonarLogin();
+        // Log.info("token: $loonarToken")
+
+        // Update task status
+        val formUpdateTaskBody = FormBody.Builder()
+                .add("state", state.id)
+                .add("note", "Task closed from JetBrains IDE")
+                .build()
+        val updateTaskRequest: Request = Request.Builder()
+                .url(API_URL.plus("/").plus(task.id))
+                .put(formUpdateTaskBody)
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Authorization", "Bearer $apiKey")
+                .addHeader("X-Token", accessToken)
+                .build()
+        val client = OkHttpClient()
+        client.newCall(updateTaskRequest).execute().use { response ->
+            if (!response.isSuccessful) throw IOException("Unexpected code $response")
+
+            println(response.body?.string())
+        }
+        // runBlocking { remoteDataSource.setTaskState(task, state) }
     }
 
-    override fun getAttributes(): CredentialAttributes {
+    /*override fun getAttributes(): CredentialAttributes {
         val serviceName = generateServiceName("Tasks", repositoryType.name + " " + getPresentableName())
         return CredentialAttributes(serviceName, username)
-    }
+    }*/
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -147,7 +194,28 @@ class LoonarRepository : NewBaseRepositoryImpl {
         return this.getPresentableName().hashCode()
     }
 
+    public fun loonarLogin(): String {
+        val formLoonarLoginBody = Gson().toJson(LoginParams(username, password));
+        val mediaType = "application/json; charset=utf-8".toMediaType()
+        val requestBody = formLoonarLoginBody.toRequestBody(mediaType)
+
+        val loonarLoginRequest: Request = Request.Builder()
+                .url(BASE_URL.plus("/api/v1/web/login"))
+                .post(requestBody)
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Authorization", "8F39D289C2D21ABA1D95845FF5F26BE1")
+                .build()
+        val client = OkHttpClient()
+        client.newCall(loonarLoginRequest).execute().use { response ->
+            val rawResponse = response.body?.string()
+            Log.info(rawResponse)
+            val loginResponse = JsonParser.parseString(rawResponse).asJsonObject
+            return loginResponse.get("token").asString
+        }
+    }
+
     companion object {
+        private const val BASE_URL = "https://be.loonar.it"
         private const val API_URL = "https://be.loonar.it/api/v1/tasks"
     }
 }

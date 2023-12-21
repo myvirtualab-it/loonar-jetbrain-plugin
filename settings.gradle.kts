@@ -1,1 +1,1 @@
-rootProject.name = "linear-app-plugin"
+rootProject.name = "loonar-jetbrain-plugin"

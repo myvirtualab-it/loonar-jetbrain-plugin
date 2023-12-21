@@ -1,6 +1,0 @@
-query TestConnection($teamId: String!){
-    team(id: $teamId) {
-        id
-        name
-    }
-}

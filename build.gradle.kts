@@ -13,7 +13,6 @@ plugins {
     alias(libs.plugins.changelog)
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
-    alias(libs.plugins.apollo3)
 }
 
 group = properties("pluginGroup").get()
@@ -26,7 +25,8 @@ repositories {
 
 dependencies {
     detektPlugins(libs.detekt.formatting)
-    implementation(libs.apollo.runtime)
+
+    implementation("com.squareup.okhttp3:okhttp:4.9.0")
 }
 
 // Set the JVM language level used to build the project. Use Java 11 for 2020.3+, and Java 17 for 2022.2+.
@@ -75,15 +75,6 @@ ktlint {
             element.file.path.contains("generated/")
         }
     }
-}
-
-apollo {
-    packageName.set("dev.mayankmkh.intellij.linear.apolloGenerated")
-    customTypeMapping.set(
-        mapOf(
-            "DateTime" to "java.util.Date",
-        ),
-    )
 }
 
 tasks {
