@@ -4,7 +4,6 @@ import com.esotericsoftware.minlog.Log
 import com.google.gson.Gson
 import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
-import com.intellij.credentialStore.LOG
 import com.intellij.tasks.CustomTaskState
 import com.intellij.tasks.Task
 import com.intellij.tasks.impl.BaseRepository
@@ -65,7 +64,7 @@ class LoonarRepository : NewBaseRepositoryImpl {
 
     override fun getPresentableName(): String {
         val name = super.getPresentableName()
-        LOG.info("password: " + password);
+        Log.info("password: " + password);
         var finalUrl: String = name.plus("?page=<%page%>&limit=<%limit%>");
         if (tag.isNotEmpty()) finalUrl = finalUrl.plus("&tag=" + tag)
         if (departmentId.isNotEmpty()) finalUrl = finalUrl.plus("&departmentId=" + departmentId)
