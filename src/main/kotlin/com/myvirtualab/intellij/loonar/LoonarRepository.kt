@@ -2,6 +2,7 @@ package com.myvirtualab.intellij.loonar
 
 import com.esotericsoftware.minlog.Log
 import com.google.gson.Gson
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
 import com.intellij.tasks.CustomTaskState
@@ -21,15 +22,21 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 
 @Suppress("TooManyFunctions")
 @Tag("Linear")
 class LoonarRepository : NewBaseRepositoryImpl {
-    var departmentId: String = ""
+    val today = LocalDate.now()
+    val formatter = DateTimeFormatter.ofPattern("dd-MM-yy")
+
+    var departmentId: String = "1"
     var userId: String = ""
-    var tag: String = ""
-    var apiKey: String = ""
+    var tag: String = "dev-sprint-" + today.minusDays((today.dayOfWeek.value - DayOfWeek.MONDAY.value + 7) % 7L).format(formatter).toString()
+    var apiKey: String = "BLa4KjczcYWoZKOwxW5vRdDSPq8SvlGvLHqoCQtkgvW9D2b43ZCm36QZi6SFkDvgJXH5XIFyHN12w7vI"
     var accessToken: String = ""
 
     /**
@@ -40,6 +47,11 @@ class LoonarRepository : NewBaseRepositoryImpl {
 
     constructor(type: LoonarRepositoryType) : super(type) {
         url = "https://be.loonar.it/api/v1/tasks/"
+        if (tag.isNotEmpty()) {
+            tag = "dev-sprint-" + today.minusDays((today.dayOfWeek.value - DayOfWeek.MONDAY.value + 7) % 7L).format(formatter).toString()
+        } else {
+            tag = "";
+        }
     }
 
     constructor(other: LoonarRepository) : super(other) {
@@ -49,6 +61,11 @@ class LoonarRepository : NewBaseRepositoryImpl {
         apiKey = other.apiKey
         accessToken = other.accessToken
         // password = other.password
+        if (tag.isNotEmpty()) {
+            tag = "dev-sprint-" + today.minusDays((today.dayOfWeek.value - DayOfWeek.MONDAY.value + 7) % 7L).format(formatter).toString()
+        } else {
+            tag = "";
+        }
     }
 
     override fun clone(): BaseRepository = LoonarRepository(this)
@@ -64,7 +81,7 @@ class LoonarRepository : NewBaseRepositoryImpl {
 
     override fun getPresentableName(): String {
         val name = super.getPresentableName()
-        Log.info("password: " + password);
+        // Log.info("password: " + password);
         var finalUrl: String = name.plus("?page=<%page%>&limit=<%limit%>");
         if (tag.isNotEmpty()) finalUrl = finalUrl.plus("&tag=" + tag)
         if (departmentId.isNotEmpty()) finalUrl = finalUrl.plus("&departmentId=" + departmentId)
@@ -193,7 +210,7 @@ class LoonarRepository : NewBaseRepositoryImpl {
         return this.getPresentableName().hashCode()
     }
 
-    public fun loonarLogin(): String {
+    public fun loonarLogin(): JsonObject {
         val formLoonarLoginBody = Gson().toJson(LoginParams(username, password));
         val mediaType = "application/json; charset=utf-8".toMediaType()
         val requestBody = formLoonarLoginBody.toRequestBody(mediaType)
@@ -209,7 +226,10 @@ class LoonarRepository : NewBaseRepositoryImpl {
             val rawResponse = response.body?.string()
             Log.info(rawResponse)
             val loginResponse = JsonParser.parseString(rawResponse).asJsonObject
-            return loginResponse.get("token").asString
+            this.accessToken = loginResponse.get("token").asString
+            return loginResponse
+            /*val loginResponse = JsonParser.parseString(rawResponse).asJsonObject
+            return loginResponse.get("token").asString*/
         }
     }
 

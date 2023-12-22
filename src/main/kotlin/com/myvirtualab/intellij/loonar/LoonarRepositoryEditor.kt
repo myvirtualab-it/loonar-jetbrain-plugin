@@ -1,11 +1,12 @@
 package com.myvirtualab.intellij.loonar
 
+import com.esotericsoftware.minlog.Log
 import com.intellij.openapi.project.Project
-import com.intellij.tasks.TaskManager
 import com.intellij.tasks.config.BaseRepositoryEditor
 import com.intellij.ui.components.JBLabel
 import com.intellij.util.Consumer
 import com.intellij.util.ui.FormBuilder
+import java.awt.Dimension
 import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JTextField
@@ -27,13 +28,8 @@ class LoonarRepositoryEditor(
 
     // login
     private lateinit var myLoginButton: JButton;
-    // private lateinit var myTagLabel: JBLabel
 
     init {
-        // myPasswordLabel.text = "API key:"
-        // myUsernameLabel.text = "Department ID:"
-        // myUrlLabel.text = "User ID:"
-
         myLoginButton.text = "Login"
         myLoginButton.isEnabled = false
 
@@ -41,19 +37,25 @@ class LoonarRepositoryEditor(
         myUrlLabel.isVisible = false
         myURLText.isVisible = false
         myShareUrlCheckBox.isVisible = false
-        /*myPasswordText.isVisible = false
-        myPasswordLabel.isVisible = false
-        myUsernameLabel.isVisible = false
-        myUserNameText.isVisible = false*/
+        // myUseProxy.isVisible = false
+        myTestButton.isVisible = false
 
         updateTestButton()
 
-        myLoginButton.addActionListener {myRepository.accessToken = myRepository.loonarLogin()};
+        myLoginButton.addActionListener {
+            val loginResponse = myRepository.loonarLogin()
+            myLoginButton.text = "Logged as " + loginResponse.get("username").asString
+        };
+
+        if (myRepository.accessToken.isNotEmpty()) {
+            val loginResponse = myRepository.loonarLogin()
+            myLoginButton.text = "Logged as " + loginResponse.get("username").asString
+        }
 
         val testUpdateListener =
                 SimpleDocumentListener { e ->
                     myRepository.apiKey = myApiKeyText.text // apiKey
-                    myRepository.username = myUserNameText.text // password
+                    myRepository.username = myUserNameText.text // username
                     myRepository.password = myPasswordText.text // password
                     myRepository.userId = myUserIdText.text // user
                     myRepository.tag = myTagText.text // tag
@@ -89,7 +91,9 @@ class LoonarRepositoryEditor(
         installListener(myDepartmentIdText)
 
         return FormBuilder.createFormBuilder()
-                .addComponent(myLoginButton)
+                .addComponentToRightColumn(myLoginButton)
+                // .addSeparator()
+                // .addComponent(JBLabel("Board Filter"))
                 .addLabeledComponent(myApiKeyLabel, myApiKeyText)
                 .addLabeledComponent(myDepartmentIdLabel, myDepartmentIdText)
                 .addLabeledComponent(myUserIdLabel, myUserIdText)
